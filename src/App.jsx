@@ -121,6 +121,11 @@ export default function App() {
   const [measureWeek, setMeasureWeek] = useState(1);
   const [measureForm, setMeasureForm] = useState({});
   const [showStartModal, setShowStartModal] = useState(!loadStorage(STORAGE_KEYS.startDate, null));
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const dayNumber = getDayNumber(startDate);
   const todayKey = getTodayKey();
@@ -340,6 +345,7 @@ export default function App() {
             <div>
               <div style={{ fontFamily:"'Syne',sans-serif",fontSize:22,fontWeight:800,color:"#63ffb4",letterSpacing:-0.5 }}>100-Day Tracker</div>
               <div style={{ fontSize:11,color:"#555",marginTop:2 }}>DAY {dayNumber} OF 100 · WEEK {weekNumber}</div>
+              <div style={{ fontSize:11,color:"#444",marginTop:1 }}>{now.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})} · {now.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",second:"2-digit",hour12:true})}</div>
             </div>
             <div style={{ textAlign:"right" }}>
               <div style={{ fontFamily:"'Syne',sans-serif",fontSize:32,fontWeight:800,color:"#fff",lineHeight:1 }}>{dayNumber}</div>
