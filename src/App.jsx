@@ -246,7 +246,22 @@ export default function App() {
   const progressPct = (dayNumber / 100) * 100;
   const modulePct = (completedModules / 24) * 100;
   const neetPct = (totalNeetcodeDone / 150) * 100;
-  const sleepColor = weeklySleepScore >= 6 ? "#63ffb4" : weeklySleepScore >= 4 ? "#ffb463" : "#ff6363";
+  // How many days have elapsed so far this week (1 = just Monday, up to 7)
+  const daysElapsedInWeek = (() => {
+    if (!startDate) return 1;
+    const keys = getWeekDateKeys(weekNumber, startDate);
+    const todayIdx = keys.indexOf(todayKey);
+    return todayIdx === -1 ? keys.length : todayIdx + 1;
+  })();
+  const sleepOnTrack = weeklySleepScore >= daysElapsedInWeek;
+  const sleepMissed = daysElapsedInWeek - weeklySleepScore;
+  const sleepColor = sleepOnTrack ? "#63ffb4" : sleepMissed <= 1 ? "#ffb463" : "#ff6363";
+  const sleepStatus = (() => {
+    if (sleepOnTrack && weeklySleepScore === 7) return "🔥 Perfect week — all 7 nights hit";
+    if (sleepOnTrack) return "✅ On track — keep it up";
+    if (sleepMissed === 1) return "⚡ 1 night missed — still recoverable";
+    return `⚠️ ${sleepMissed} nights missed — prioritize sleep`;
+  })();
 
   const tabs = [
     { id: "daily", label: "Daily", icon: "☀️" },
@@ -426,7 +441,7 @@ export default function App() {
                 })()}
               </div>
               <div style={{ marginTop:10,fontSize:11,color:"#555",textAlign:"center" }}>
-                {weeklySleepScore >= 6 ? "🔥 Great week — keep it up" : weeklySleepScore >= 4 ? "⚡ Good — push for 6+" : "⚠️ Under target — prioritize sleep"}
+                {sleepStatus}
               </div>
             </div>
 
