@@ -57,7 +57,18 @@ const NOTE_TAGS = [
   { id: "job", label: "Job Prep", color: "#c463ff" },
 ];
 
-const MODULES = Array.from({ length: 24 }, (_, i) => i + 1);
+const TOTAL_MODULES = 96;
+const TOTAL_SPRINTS = 24;
+const SPRINT_RANGES = (() => {
+  const ranges = {};
+  let day = 1;
+  for (let s = 11; s <= 24; s++) {
+    const dur = (s - 11) < 10 ? 6 : 5;
+    ranges[s] = { start: day, end: day + dur - 1 };
+    day += dur;
+  }
+  return ranges;
+})();
 const WATER_GOAL = 8;
 const ENERGY_LABELS = ["", "💀", "😴", "😐", "🙂", "🔥"];
 
@@ -105,7 +116,7 @@ export default function App() {
   const [startDate, setStartDate] = useState(() => loadStorage(STORAGE_KEYS.startDate, null));
   const [days, setDays] = useState(() => loadStorage(STORAGE_KEYS.days, {}));
   const [measurements, setMeasurements] = useState(() => loadStorage(STORAGE_KEYS.measurements, {}));
-  const [modules, setModules] = useState(() => loadStorage(STORAGE_KEYS.modules, Array(24).fill(false).map((_, i) => i < 11)));
+  const [modules, setModules] = useState(() => loadStorage(STORAGE_KEYS.modules, Array(TOTAL_MODULES).fill(false).map((_, i) => i < 40)));
   const [neetcode, setNeetcode] = useState(() => loadStorage(STORAGE_KEYS.neetcode, {}));
   const [notes, setNotes] = useState(() => loadStorage(STORAGE_KEYS.notes, []));
 
@@ -244,7 +255,7 @@ export default function App() {
   }
 
   const progressPct = (dayNumber / 100) * 100;
-  const modulePct = (completedModules / 24) * 100;
+  const modulePct = (completedModules / TOTAL_MODULES) * 100;
   const neetPct = (totalNeetcodeDone / 150) * 100;
   // How many days have elapsed so far this week (1 = just Monday, up to 7)
   const daysElapsedInWeek = (() => {
@@ -568,29 +579,49 @@ export default function App() {
           <div className="fi">
             <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8 }}>
               <div style={{ fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:800 }}>Coding Modules</div>
-              <div style={{ fontFamily:"'Syne',sans-serif",fontSize:13,color:"#63ffb4",fontWeight:700 }}>{completedModules}/24</div>
+              <div style={{ fontFamily:"'Syne',sans-serif",fontSize:13,color:"#63ffb4",fontWeight:700 }}>{completedModules}/{TOTAL_MODULES}</div>
             </div>
             <div style={{ height:6,background:"#1e1e2e",borderRadius:3,marginBottom:24,overflow:"hidden" }}>
               <div style={{ height:"100%",width:`${modulePct}%`,background:"linear-gradient(90deg,#63ffb4,#63d4ff)",borderRadius:3,transition:"width 0.4s" }} />
             </div>
-            {[{label:"Phase 1",range:[1,12],note:"Days 1–50",color:"#63ffb4"},{label:"Phase 2",range:[13,24],note:"Days 51–80",color:"#63d4ff"}].map(phase => (
-              <div key={phase.label} style={{ marginBottom:24 }}>
-                <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:12 }}>
-                  <div style={{ fontFamily:"'Syne',sans-serif",fontSize:13,fontWeight:700,color:phase.color }}>{phase.label}</div>
-                  <div style={{ fontSize:11,color:"#555" }}>{phase.note}</div>
-                </div>
-                <div style={{ display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:8 }}>
-                  {MODULES.slice(phase.range[0]-1,phase.range[1]).map(mod => {
-                    const idx=mod-1; const done=modules[idx];
-                    return <button key={mod} onClick={() => toggleModule(idx)} className="mbtn" style={{ aspectRatio:"1",borderRadius:10,background:done?phase.color:"#12121c",border:`1px solid ${done?phase.color:"#1e1e2e"}`,color:done?"#0a0a0f":"#555",fontSize:13,fontFamily:"'Syne',sans-serif",fontWeight:800 }}>{mod}</button>;
-                  })}
-                </div>
-              </div>
-            ))}
+            <div style={{ display:"flex",flexDirection:"column",gap:12,marginBottom:20 }}>
+              {Array.from({length:TOTAL_SPRINTS},(_,i)=>i+1).map(sprint => {
+                const startIdx=(sprint-1)*4;
+                const sprintModules=[startIdx,startIdx+1,startIdx+2,startIdx+3];
+                const allDone=sprintModules.every(idx=>modules[idx]);
+                const completed=sprint<=10;
+                const range=SPRINT_RANGES[sprint];
+                const color=completed?"#63ffb4":"#63d4ff";
+                return (
+                  <div key={sprint} style={{ background:allDone?"#0d1f17":"#12121c",border:`1px solid ${allDone?color:"#1e1e2e"}`,borderRadius:12,padding:"14px 16px" }}>
+                    <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
+                      <div style={{ fontFamily:"'Syne',sans-serif",fontSize:13,fontWeight:700,color:allDone?color:"#e8e8f0" }}>
+                        Sprint {sprint}
+                      </div>
+                      <div style={{ fontSize:11,color:allDone?color:"#555" }}>
+                        {completed?"Completed":range?`Days ${range.start}–${range.end}`:""}
+                      </div>
+                    </div>
+                    <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8 }}>
+                      {sprintModules.map(idx => {
+                        const done=modules[idx];
+                        const modNum=idx+1;
+                        return (
+                          <button key={idx} onClick={() => toggleModule(idx)} className="mbtn"
+                            style={{ padding:"10px 0",borderRadius:10,background:done?color:"#1e1e2e",border:`1px solid ${done?color:"#2a2a3a"}`,color:done?"#0a0a0f":"#555",fontSize:13,fontFamily:"'Syne',sans-serif",fontWeight:800 }}>
+                            {modNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
             <div style={{ background:"#12121c",border:"1px solid #1e1e2e",borderRadius:12,padding:"16px 20px" }}>
               <div style={{ fontFamily:"'Syne',sans-serif",fontSize:13,fontWeight:700,color:"#fff",marginBottom:4 }}>🎯 Day 80–100: Job Applications</div>
-              <div style={{ fontSize:12,color:"#555" }}>Finish all 24 modules → polish resume → start applying. Target: 5+ apps by Day 100.</div>
-              {completedModules===24 && <div style={{ marginTop:10,color:"#63ffb4",fontSize:13 }}>✓ All modules complete — time to apply!</div>}
+              <div style={{ fontSize:12,color:"#555" }}>Finish all 96 modules → polish resume → start applying. Target: 5+ apps by Day 100.</div>
+              {completedModules===TOTAL_MODULES && <div style={{ marginTop:10,color:"#63ffb4",fontSize:13 }}>✓ All modules complete — time to apply!</div>}
             </div>
           </div>
         )}
@@ -706,7 +737,7 @@ export default function App() {
               {[
                 { label:"Day", value:`${dayNumber}/100`, color:"#63ffb4" },
                 { label:"Week", value:`${weekNumber}/14`, color:"#63d4ff" },
-                { label:"Modules", value:`${completedModules}/24`, color:"#63ffb4" },
+                { label:"Modules", value:`${completedModules}/${TOTAL_MODULES}`, color:"#63ffb4" },
                 { label:"NeetCode", value:`${totalNeetcodeDone}/150`, color:"#ffb463" },
                 { label:"Today's Blocks", value:`${completedToday}/${BLOCKS.length}`, color:"#63d4ff" },
                 { label:"Sleep This Week", value:`${weeklySleepScore}/7`, color:sleepColor },
